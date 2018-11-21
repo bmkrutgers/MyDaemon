@@ -17,30 +17,6 @@ mycursor = mydb.cursor()
 #created table fileinfo
 #mycursor.execute("CREATE TABLE fileinfo (filename VARCHAR(255) not null, fileid VARCHAR(255) not null, cloud_provider VARCHAR(50) not null, encryption_key int, decryption_key int, primary key(fileid,cloud_provider))")
 
-#given username and password
-
-#username given (fill in  later)
-username = "test"
-#password given (fill in  later)
-password= "test"
-
-mycursor.execute("SELECT username FROM user")
-
-myresult = mycursor.fetchall()
-
-for x in myresult:
-	if(x==myresult):
-  		print("user exists")
-  		mycursor.execute("SELECT passwd FROM user")
-  		myresult = mycursor.fetchall()
-
-		for x in myresult:
-  			if(x==password):
-  				print("valid user")
-  			else:
-  				print("invalid user")
-  	else:
-  		print("user doesn't exist")
 
 
 
