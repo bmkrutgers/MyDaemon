@@ -11,7 +11,7 @@ from apiclient.http import (MediaFileUpload, MediaIoBaseDownload)
 import logging
 logger = logging.getLogger(__name__)
 
-class Api:
+class GoogleDrive:
     """Google Drive API for uploading and deleting files.
         Sets credentials upon instance initialization
     
