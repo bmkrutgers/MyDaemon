@@ -4,6 +4,17 @@ import smtplib
 import pyAesCrypt
 import random
 import string
+import mysql.connector
+
+mydb = mysql.connector.connect(
+  host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
+  user="modi1234",
+  passwd="Was160497",
+  database="CloudNine"
+)
+
+
+mycursor = mydb.cursor()
 
 userdetails = []
 
@@ -24,6 +35,8 @@ while (loop == 'true'):
 
         else:
             userdetails.append(username)
+            sql = "INSERT INTO user (username) VALUES (%s)
+            mycursor.execute(sql, username)
             loop = 'false'
 loop = 'true'
 while (loop == 'true'):
@@ -60,6 +73,8 @@ while (loop == 'true'):
         repassword = input("retype password:")
         if (password == repassword):
             userdetails.append(password)
+            sql = "INSERT INTO user (passwd) VALUES (%s)
+            mycursor.execute(sql, password)
             loop == 'false'
             break
         else:
