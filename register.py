@@ -21,6 +21,8 @@ userdetails = []
 
 def key_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
+  
+
 
 
 print("welome to registration")
@@ -30,14 +32,17 @@ while (loop == 'true'):
     if not username:
         print("username cannot be empty")
     else:
-        if username in open('userlist.txt').read():  ## here database read commands comes in#
-            print("username already exists choose new one ")
-
-        else:
-            userdetails.append(username)
-            sql = "INSERT INTO user (username) VALUES (%s)
-            mycursor.execute(sql, username)
-            loop = 'false'
+        mycursor.execute("SELECT username FROM user")
+        myresult = mycursor.fetchall()
+        for x in myresult:
+            if(x==user):
+        #if username in open('userlist.txt').read():  ## here database read commands comes in#
+              print("username already exists choose new one ")
+            else:
+              userdetails.append(username)
+              sql = "INSERT INTO user (username) VALUES (%s)
+              mycursor.execute(sql, username)
+              loop = 'false'
 loop = 'true'
 while (loop == 'true'):
     emailid = input("enter email address: ")
