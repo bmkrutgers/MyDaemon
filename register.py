@@ -34,7 +34,8 @@ while (loop == 'true'):
     else:
         mycursor.execute("SELECT username FROM user")
         myresult = mycursor.fetchall()
-        for x in myresult:
+        for y in myresult:
+            x = ''.join(y)
             if(x==user):
         #if username in open('userlist.txt').read():  ## here database read commands comes in#
               print("username already exists choose new one ")
@@ -49,8 +50,13 @@ while (loop == 'true'):
     if not emailid:
         print("email id cannot be emptty")
     else:
-        if emailid in open('userlist.txt').read():  ## here database read commands comes in#
-            print("emailid  already exists choose new one ")
+        mycursor.execute("SELECT email FROM user")
+        myresult = mycursor.fetchall()
+        for y in myresult:
+            x = ''.join(y)
+            if(x==emailid):
+        #if emailid in open('userlist.txt').read():  ## here database read commands comes in#
+              print("emailid  already exists choose new one ")
 
         else:
             server = smtplib.SMTP("smtp.gmail.com", 587)
