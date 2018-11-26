@@ -29,22 +29,23 @@ myresult = mycursor.fetchall()
 boolvar = 'true'
 while (boolvar == 'true'):
     user = input("Pleaae enter your username:  ")
-    for x in myresult:
+    for y in myresult:
+		x = ''.join(y)
 		if(x==user):
         	while True:
-        		mycursor.execute("SELECT passwd FROM user")
-            	pwd = p = getpass.getpass(prompt='enter your password:  ')
+        		
+            		pwd = p = getpass.getpass(prompt='enter your password:  ')
 
-            	mycursor.execute("SELECT passwd FROM user")
-  				myresult = mycursor.fetchall()
-            	for x in myresult:
-  					if(x==pwd):
-                		print("Welcome!!!")
-                		boolvar = 'false'
-                		os.system("python options.py")
-                		break
-            		else:
-                		print
-                		"The password you entered is incorrect."
-    	else:
-        print("incorrect username")
+            		mycursor.execute("SELECT passwd FROM user")
+  			myresult = mycursor.fetchall()
+            		for y in myresult:
+				x = ''.join(y)
+  				if(x==pwd):
+                			print("Welcome!!!")
+                			boolvar = 'false'
+                			os.system("python options.py")
+                			break
+            			else:
+                			print("The password you entered is incorrect.")
+    		else:
+        		print("incorrect username")
