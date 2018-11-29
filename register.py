@@ -37,12 +37,10 @@ while (loop == 'true'):
         for y in myresult:
             x = ''.join(y)
             if(x==user):
-        #if username in open('userlist.txt').read():  ## here database read commands comes in#
+          #if username in open('userlist.txt').read():  ## here database read commands comes in#
               print("username already exists choose new one ")
             else:
-              userdetails.append(username)
-              sql = "INSERT INTO user (username) VALUES (%s)
-              mycursor.execute(sql, username)
+              #userdetails.append(username)
               loop = 'false'
 loop = 'true'
 while (loop == 'true'):
@@ -74,7 +72,7 @@ while (loop == 'true'):
                     print("email successfully verified")
                     loopinside = 'false'
             loop = 'false'
-            userdetails.append(emailid)
+            #userdetails.append(emailid)
 loop = 'true'
 while (loop == 'true'):
     password = input("enter a password: ")
@@ -83,9 +81,9 @@ while (loop == 'true'):
     else:
         repassword = input("retype password:")
         if (password == repassword):
-            userdetails.append(password)
-            sql = "INSERT INTO user (passwd) VALUES (%s)
-            mycursor.execute(sql, password)
+            #userdetails.append(password)
+            sql = "INSERT INTO user (username, passwd, email) VALUES (%s,%s,%s)"
+            mycursor.execute(sql, username, emailid, password)
             loop == 'false'
             break
         else:
