@@ -16,6 +16,14 @@ file2 = filename + str_dropbox
 names = [file1, file2]
 size = 2
 
+mydb = mysql.connector.connect(
+  host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
+  user="modi1234",
+  passwd="Was160497",
+  database="CloudNine"
+)
+
+mycursor = mydb.cursor()
 
 def split_files(filename, size):
     with open(filename, 'rb') as mfile:
