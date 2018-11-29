@@ -36,14 +36,21 @@ def key_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-
 passwordkey=key_generator()
 f= open("pass.txt","w+")
 f.write(passwordkey)
+
 f.close()
 
 split_files(filename, 2)
 
+sql = "INSERT INTO fileinfo (filename,cloud_provider, encryption_key) VALUES (%s, %s, %s)"
+mycursor.execute(sql,filename,"google", passwordkey)
+mydb.commit()
+
+sql = "INSERT INTO fileinfo (filename,cloud_provider, encryption_key) VALUES (%s, %s, %s)"
+mycursor.execute(sql,filename,"dropbox", passwordkey)
+mydb.commit()
 
 aes=".aes"
 file1aes=file1 + aes
