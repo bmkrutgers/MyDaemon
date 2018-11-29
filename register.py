@@ -84,6 +84,7 @@ while (loop == 'true'):
             #userdetails.append(password)
             sql = "INSERT INTO user (username, passwd, email) VALUES (%s,%s,%s)"
             mycursor.execute(sql, username, emailid, password)
+            mydb.commit()
             loop == 'false'
             break
         else:
