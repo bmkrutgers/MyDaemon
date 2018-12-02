@@ -1,6 +1,7 @@
 import os
 import sys
-
+import register
+import login
 print("Welcome to Cloud9")
 
 print("1. Login")
@@ -11,11 +12,11 @@ while (loop == 'true'):
     userinput = input(" Enter your choice: ")
 
     if (userinput == '1'):
-        os.system('python login.py')
+        login.userlogin()
         loop = 'false'
 
     elif (userinput == '2'):
-        os.system('python register.py')
+        register.registration()
         loop = 'false'
 
     else:
