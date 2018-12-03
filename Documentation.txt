@@ -1,0 +1,32 @@
+Documentation::
+
+Packages Required : 
+
+Download pyAesCrypt
+https://pypi.org/project/pyAesCrypt/
+
+Rest of the packages must be available default
+
+How to Use:
+
+Split : python Split.py filename
+
+this splits the file and does encryption and generates the following files:
+
+file ==========> file 1 , file2 ========> encryption ========> file1.aes , file2.aes , fileslist.txt, pass.txt, original.txt
+
+it then deletes the original file(for reference)
+
+the split files file1 and file2
+
+fileslist.txt contains the original split file names and their encrypted parts so as to construct original split files
+
+pass.txt contains the key for decryption
+
+original.txt contains the original file name
+
+
+
+Join:  python Join.py fileslist.txt pass.txt original.txt
+
+file1.aes , file2.aes , fileslist.txt, pass.txt, original.txt ============> Decryption ============> file
