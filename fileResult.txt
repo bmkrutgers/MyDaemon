@@ -1,0 +1,4 @@
+Hey.txt         Hey.txt                        1  0  0 0
+FilesText.txt   FilesText.txt                  0  1  0 0
+rem.txt         rem.txt                        0  0  1 0
+old.txt         New.txt                        0  0  0 1
