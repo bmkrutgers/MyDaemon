@@ -30,21 +30,21 @@ def userlogin():
     while (boolvar == 'true'):
         user = input("Please enter your username:  ")
         for y in myresult:
-		    x = ''.join(y)
-		    if(x==user):
-                while True:
-                        pwd = getpass.getpass(prompt='enter your password:  ')
-                        mycursor.execute("SELECT passwd FROM user")
-  			            myresult = mycursor.fetchall()
-            		    for y in myresult:
-				            x = ''.join(y)
-  				            if(x==pwd):
-                                print("Welcome!!!")
-                                boolvar = 'false'
-                                clioptions.options()
-                                break
-                            else:
-                                print("The password you entered is incorrect.")
-            else:
-                print("incorrect username")
+		x = ''.join(y)
+		if(x==user):
+			while True:
+                        	pwd = getpass.getpass(prompt='enter your password:  ')
+                       	 	mycursor.execute("SELECT passwd FROM user")
+				myresult = mycursor.fetchall()
+            		    	for y in myresult:
+					x = ''.join(y)
+					if(x==pwd):
+                               	 		print("Welcome!!!")
+                                		boolvar = 'false'
+                                		clioptions.options()
+                                		break
+                           		 else:
+                                		print("The password you entered is incorrect.")
+            	else:
+                	print("incorrect username")
     return
