@@ -6,6 +6,16 @@ import random
 import string
 from fileinput import filename
 
+mydb = mysql.connector.connect(
+  host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
+  user="modi1234",
+  passwd="Was160497",
+  database="CloudNine"
+)
+
+
+mycursor = mydb.cursor()
+
 # encryption/decryption buffer size - 64K
 bufferSize = 64 * 1024
 
@@ -40,6 +50,8 @@ def split_files(filename, size):
     f.close()
 
     split_files(filename, 2)
+    
+    
 
     aes = ".aes"
     file1aes = file1 + aes
@@ -71,6 +83,14 @@ def split_files(filename, size):
 
     if os.path.exists(filename):
         os.remove(filename)
+        
+    sql = "INSERT INTO fileinfo (filename, cloud_provider, encryption_key) VALUES (%s,%s,%s)"
+    mycursor.execute(sql, file1, "google", passwordkey)
+    mydb.commit()
+    
+    sql = "INSERT INTO fileinfo (filename, cloud_provider, encryption_key) VALUES (%s,%s,%s)"
+    mycursor.execute(sql, file2, "dropbox", passwordkey)
+    mydb.commit()
 
     print("splitting complete ")
     return
