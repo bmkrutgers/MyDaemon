@@ -11,6 +11,8 @@ import shutil
 from shutil import copyfile
 from filesystems import EventHandler
 import Split 
+import cloud_storage_api/google_drive as gdrive
+import dropbox
 
 mydb = mysql.connector.connect(
   host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
@@ -25,7 +27,9 @@ mycursor = mydb.cursor()
 #create backup folder
 def setupSnapshot(dirpath):
     
+	#get curr dir
     parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
+	#change dir
     os.chdir(parentdir)
     if not os.path.exists(".backup"):
         os.makedirs(".backup")
@@ -49,9 +53,12 @@ def createSnapshot(events):
 
 def deleteSnapshot():
     
+	#get curr dir
     src = os.listdir()
+	#get parent dir
     parentdir = os.path.abspath(os.path.join(src, os.pardir))
     
+	#backup folder path
     dest = parentdir + "/" + ".backup"
     
     for the_file in os.listdir(dest):
@@ -72,7 +79,27 @@ def getListofSnapshotFiles(events):
     return f
 
 def addFile(filename):
+	
+	src = os.listdir()
+    parentdir = os.path.abspath(os.path.join(src, os.pardir))
+    
+    dest = parentdir + "/" + ".backup"
+	
+	os.chdir(dest)
+	
 	Split.split_files(filename,2)
+	
+	filepath = dest + "/" + filename
+	
+	gdrive.upload_file(filename)
+	
+	dbx.files_upload(filename) 
+	
+	sql = "UPDATE fileinfo SET fileid = %s WHERE filename = %s AND cloud_provider = %s"
+    val = (filename, filename, "dropbox")
+	mycursor.execute(sql, val)
+	mydb.commit()
+	
 	
     print("Add/Modify Files")
     return
