@@ -11,7 +11,7 @@ import shutil
 from shutil import copyfile
 from filesystems import EventHandler
 import Split 
-import cloud_storage_api/google_drive as gdrive
+import cloud_storage_api.google_drive as gdrive
 import dropbox
 
 mydb = mysql.connector.connect(
@@ -119,6 +119,15 @@ def deleteFile(filename):
 	
 	gdrive.delete_file(fileid)
 	
+	dropbox.files_delete(filename)
+	
+	sql = "DELETE FROM fileinfo WHERE filename = %s"
+    val = (filename )
+
+    mycursor.execute(sql, val)
+
+    mydb.commit()
+	
     return
 
 def executeCloud9():
@@ -191,7 +200,6 @@ def getDropBoxFileIdFromDbase(filename):
         
     return pDropBoxId
 
-    
 
 def getGDriveFileIdFromDbase(filename):
     
@@ -207,16 +215,12 @@ def getGDriveFileIdFromDbase(filename):
     
 
 def downLoad_DropBox(fileId_dropBox):
+	
+	src = os.listdir()
 
-    sql = "SELECT filename FROM fileinfo WHERE cloud_provider = %s AND fileid = %s"
-    mycursor.execute(sql, "dropbox", fileId_dropBox)
-
-    myresult = mycursor.fetchall()
-
-    for x in myresult:
-        pDropBoxfilename = x
-        
-    return pDropBoxfilename
+    dbx.files_download_to_file(fileId_dropBox, src)
+	
+	return
     
 def getGdriveName(fileId_gDrive):
     
@@ -232,8 +236,10 @@ def getGdriveName(fileId_gDrive):
 	
 def downLoad_Gdrive(fileId_gDrive):
     
-    
-    
+	src = os.listdir()
+	
+	gdrive.download_file(fileId_gDrive,src)
+	
     return 
 
 def options():
