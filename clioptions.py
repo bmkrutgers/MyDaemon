@@ -105,13 +105,20 @@ def addFile(filename):
     return
 
 def renameFile(oldpFileName,newpFileName):
+
+	deleteFile(oldpFileName)
+	addFile(newpFileName)
     print("rename File")
     print(oldpFileName)
     print(newpFileName)
     return
 
-def deleteFile():
-    print("deleteFile")
+def deleteFile(filename):
+    
+	fileid = getGDriveFileIdFromDbase(filename)
+	
+	gdrive.delete_file(fileid)
+	
     return
 
 def executeCloud9():
@@ -211,7 +218,7 @@ def downLoad_DropBox(fileId_dropBox):
         
     return pDropBoxfilename
     
-def downLoad_Gdrive(fileId_gDrive):
+def getGdriveName(fileId_gDrive):
     
     sql = "SELECT filename FROM fileinfo WHERE cloud_provider = %s AND fileid = %s"
     mycursor.execute(sql, "google", fileId_gDrive)
@@ -222,6 +229,12 @@ def downLoad_Gdrive(fileId_gDrive):
         pGdrivefilename = x
     
     return pGdrivefilename
+	
+def downLoad_Gdrive(fileId_gDrive):
+    
+    
+    
+    return 
 
 def options():
     fileList = listFilesinDirectory()
