@@ -5,6 +5,7 @@ import pyAesCrypt
 import random
 import string
 from fileinput import filename
+import mysql.connector
 
 mydb = mysql.connector.connect(
   host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",

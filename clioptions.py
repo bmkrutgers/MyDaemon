@@ -9,10 +9,14 @@ import Joining_files
 import os.path
 import shutil
 from shutil import copyfile
-from filesystems import EventHandler
+from filesystem import EventHandler
 import Split 
 import cloud_storage_api.google_drive as gdrive
 import dropbox
+from dropbox.files import WriteMode
+from dropbox.exceptions import ApiError, AuthError
+
+TOKEN = '8d2zpj3IYCAAAAAAAAAAyfYnUtShU194fH2pHW-s1xOuHLBa6Vw9UEqqwMRhxmQk'
 
 mydb = mysql.connector.connect(
   host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
@@ -25,9 +29,10 @@ mydb = mysql.connector.connect(
 mycursor = mydb.cursor()
 
 #create backup folder
-def setupSnapshot(dirpath):
+def setupSnapshot():
     
 	#get curr dir
+	dirpath = os.listdir()
     parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
 	#change dir
     os.chdir(parentdir)
@@ -78,6 +83,28 @@ def getListofSnapshotFiles(events):
 	
     return f
 
+def dropbox_upload(filename):
+	filepath = "/" + filename
+	
+	with open(filename, 'rb') as f:
+		# We use WriteMode=overwrite to make sure that the settings in the file
+		# are changed on upload
+		#print("Uploading " + LOCALFILE + " to Dropbox as " + BACKUPPATH + "...")
+		try:
+			dbx.files_upload(f.read(), filepath)
+		except ApiError as err:
+			# This checks for the specific error where a user doesn't have
+			# enough Dropbox space quota to upload this file
+			if (err.error.is_path() and
+					err.error.get_path().reason.is_insufficient_space()):
+				sys.exit("ERROR: Cannot back up; insufficient space.")
+			elif err.user_message_text:
+				print(err.user_message_text)
+				sys.exit()
+			else:
+				print(err)
+				sys.exit()
+
 def addFile(filename):
 	
 	src = os.listdir()
@@ -93,7 +120,7 @@ def addFile(filename):
 	
 	gdrive.upload_file(filename)
 	
-	dbx.files_upload(filename) 
+	dropbox_upload(filename)
 	
 	sql = "UPDATE fileinfo SET fileid = %s WHERE filename = %s AND cloud_provider = %s"
     val = (filename, filename, "dropbox")
@@ -279,6 +306,7 @@ def options():
 			while True:
 				time.sleep(5)
 				events = event_handler.get_new_batch()
+				setupSnapshot()
 				createSnapshot(events)
 				executeCloud9()
 				deleteSnapshot()
