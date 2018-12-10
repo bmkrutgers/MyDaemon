@@ -16,7 +16,7 @@ import dropbox
 from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
 
-TOKEN = '8d2zpj3IYCAAAAAAAAAAyfYnUtShU194fH2pHW-s1xOuHLBa6Vw9UEqqwMRhxmQk'
+TOKEN = ''
 
 mydb = mysql.connector.connect(
   host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
