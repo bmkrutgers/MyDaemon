@@ -3,7 +3,7 @@ import dropbox
 from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
 
-TOKEN = '8d2zpj3IYCAAAAAAAAAAyfYnUtShU194fH2pHW-s1xOuHLBa6Vw9UEqqwMRhxmQk'
+TOKEN = ''
 
 LOCALFILE = 'test.txt'
 BACKUPPATH = '/test.txt'
