@@ -86,11 +86,13 @@ def split_files(filename, size):
         os.remove(filename)
         
     sql = "INSERT INTO fileinfo (filename, cloud_provider, encryption_key) VALUES (%s,%s,%s)"
-    mycursor.execute(sql, file1, "google", passwordkey)
+    val = (file1, "google", passwordkey)
+    mycursor.execute(sql, val)
     mydb.commit()
     
     sql = "INSERT INTO fileinfo (filename, cloud_provider, encryption_key) VALUES (%s,%s,%s)"
-    mycursor.execute(sql, file2, "dropbox", passwordkey)
+    val = (file2, "dropbox", passwordkey)
+    mycursor.execute(sql, val)
     mydb.commit()
 
     print("splitting complete ")
