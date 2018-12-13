@@ -25,6 +25,8 @@ mydb = mysql.connector.connect(
   database="CloudNine"
 )
 
+dbx = dropbox.Dropbox(TOKEN)
+
 
 mycursor = mydb.cursor()
 
