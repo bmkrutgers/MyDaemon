@@ -75,7 +75,8 @@ def registration():
             repassword = input("retype password:")
             if(password == repassword):
                 sql = "INSERT INTO user (username, passwd, email) VALUES (%s,%s,%s)"
-                mycursor.execute(sql, username, emailid, password)
+                val = (username, emailid, password)
+                mycursor.execute(sql,val)
                 mydb.commit()
                 #userdetails.append(password)
                 loop == 'false'
