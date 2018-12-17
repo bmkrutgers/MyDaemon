@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import  os
+import os
 import sys
 import array
 import string
@@ -9,91 +9,120 @@ import Joining_files
 import os.path
 import shutil
 from shutil import copyfile
-from filesystem import EventHandler
-import Split 
-import cloud_storage_api.google_drive as gdrive
+import filesystem
+import Split
 import dropbox
 from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
+from cloud_storage_api.google_drive import GoogleDrive
+import mysql.connector
+import ntpath
+from typing import Any
 
-TOKEN = ''
+TOKEN = 'ketP6PVRRsAAAAAAAAAACvTqOPrJ6jv6ntnJbeGXx3FLt0PzAKk5GVzOuirMOYlP'
+
+dirpath = "/home/bmk/Documents/git/Cl9"
 
 mydb = mysql.connector.connect(
-  host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
-  user="modi1234",
-  passwd="Was160497",
-  database="CloudNine"
+	host="cloudnine.c87lmy1ftwtu.us-east-2.rds.amazonaws.com",
+	user="modi1234",
+	passwd="Was160497",
+	database="CloudNine"
 )
 
 dbx = dropbox.Dropbox(TOKEN)
 
+gdrive = GoogleDrive()
 
 mycursor = mydb.cursor()
 
-#create backup folder
+def path_leaf(path):
+	head, tail = ntpath.split(path)
+	return tail or ntpath.basename(head)
+
+
+# create backup folder
 def setupSnapshot():
-    
-	#get curr dir
-	dirpath = os.listdir()
-    parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
-	#change dir
-    os.chdir(parentdir)
-    if not os.path.exists(".backup"):
-        os.makedirs(".backup")
-    
+	cwd = os.path.dirname(os.path.realpath(__file__))
+	parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
+	# print("parent directory of folder sent: " + parentdir)
+	os.chdir(parentdir)
+
+
+	if not os.path.exists(".backup"):
+		os.makedirs(".backup")
+	os.chdir(cwd)
+	return
+
 
 def createSnapshot(events):
-    
-    files =  getListofSnapshotFiles()
-    
-    src = os.listdir()
-    parentdir = os.path.abspath(os.path.join(src, os.pardir))
-    
-    dest = parentdir + "/" + ".backup"
-    
-    size = len(files)
-    for x in range(0, size):
-        filename = files[x]
-        copyfile(src, dest)
-    
-    return
+
+	pSet = isinstance(events, dict)
+
+	if pSet:
+		files = getListofSnapshotFiles(events)
+	else:
+		files = events
+
+	src = dirpath
+
+	# print( "src directory in createSnapshot: " + src)
+
+	parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
+
+	dest = parentdir + "/" + ".backup"
+
+	# print( "dest directory in createSnapshot: " + dest)
+
+	size = len(files)
+
+	for x in range(0, size):
+		filename = path_leaf(files[x])
+		srctemp = src + "/" + filename
+		desttemp = dest + "/" + filename
+		copyfile(srctemp, desttemp)
+		srctemp = ""
+		desttemp = ""
+	return
+
+
 
 def deleteSnapshot():
-    
-	#get curr dir
-    src = os.listdir()
-	#get parent dir
-    parentdir = os.path.abspath(os.path.join(src, os.pardir))
-    
-	#backup folder path
-    dest = parentdir + "/" + ".backup"
-    
-    for the_file in os.listdir(dest):
-        file_path = os.path.join(folder, the_file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-        except Exception as e:
-            print("snapshot file cannot be deleted")
-    return
+	parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
+
+	dest = parentdir + "/" + ".backup"
+
+	for the_file in os.listdir(dest):
+		file_path = os.path.join(dest, the_file)
+		try:
+			if os.path.isfile(file_path):
+				os.unlink(file_path)
+		except Exception as e:
+			print("snapshot file cannot be deleted")
+	return
+
 
 def getListofSnapshotFiles(events):
-
-    f = []
+	f = []
 	for key in events.keys():
-		f.append(key)
-	
-    return f
+		if os.path.isfile(key):
+			f.append(key)
+
+	return f
+
 
 def dropbox_upload(filename):
+	filename = path_leaf(filename)
 	filepath = "/" + filename
-	
+
+	print(filepath)
+
 	with open(filename, 'rb') as f:
 		# We use WriteMode=overwrite to make sure that the settings in the file
 		# are changed on upload
-		#print("Uploading " + LOCALFILE + " to Dropbox as " + BACKUPPATH + "...")
+		# print("Uploading " + LOCALFILE + " to Dropbox as " + BACKUPPATH + "...")
 		try:
-			dbx.files_upload(f.read(), filepath)
+			dbx.files_upload(f.read(), filepath, mode=dropbox.files.WriteMode.overwrite)
 		except ApiError as err:
 			# This checks for the specific error where a user doesn't have
 			# enough Dropbox space quota to upload this file
@@ -107,213 +136,401 @@ def dropbox_upload(filename):
 				print(err)
 				sys.exit()
 
+	return
+
+
 def addFile(filename):
-	
-	src = os.listdir()
-    parentdir = os.path.abspath(os.path.join(src, os.pardir))
-    
-    dest = parentdir + "/" + ".backup"
-	
+
+	filename = path_leaf(filename)
+
+	cwd = os.path.dirname(os.path.realpath(__file__))
+
+	src = dirpath
+
+	parentdir = os.path.abspath(os.path.join(src, os.pardir))
+
+	dest = parentdir + "/" + ".backup"
+
 	os.chdir(dest)
-	
-	Split.split_files(filename,2)
-	
-	filepath = dest + "/" + filename
-	
-	gdrive.upload_file(filename)
-	
-	dropbox_upload(filename)
-	
-	sql = "UPDATE fileinfo SET fileid = %s WHERE filename = %s AND cloud_provider = %s"
-    val = (filename, filename, "dropbox")
+
+	(filegoogle, filedropbox, passwordkey) = Split.split_files(filename)
+
+	sql = "INSERT INTO fileinfo (filename, gcloud_provider, encryption_key) VALUES (%s,%s,%s)"
+	val = (filename,filegoogle, passwordkey)
 	mycursor.execute(sql, val)
 	mydb.commit()
-	
-	
-    print("Add/Modify Files")
-    return
 
-def renameFile(oldpFileName,newpFileName):
+	sql = "UPDATE  fileinfo  SET dcloud_provider = %s WHERE filename = %s"
+	val = (filedropbox, filename)
+	mycursor.execute(sql, val)
+	mydb.commit()
+
+	gdrivefileId = gdrive.upload_file(filegoogle)
+
+	sql = "UPDATE fileinfo SET googlefileid = %s WHERE filename = %s"
+	val = (gdrivefileId, filename)
+	mycursor.execute(sql, val)
+	mydb.commit()
+
+	dropbox_upload(filedropbox)
+
+	sql = "UPDATE fileinfo SET dropboxfileid = %s WHERE filename = %s"
+	val = (filedropbox, filename)
+	mycursor.execute(sql, val)
+	mydb.commit()
+
+
+	os.chdir(cwd)
+
+
+	print("Add/Modify Files")
+
+
+	return
+
+
+def renameFile(oldpFileName, newpFileName):
 
 	deleteFile(oldpFileName)
 	addFile(newpFileName)
-    print("rename File")
-    print(oldpFileName)
-    print(newpFileName)
-    return
+
+
+	print("rename File")
+	print(oldpFileName)
+	print(newpFileName)
+	return
+
 
 def deleteFile(filename):
-    
+	
+	filename = path_leaf(filename)
+
+	#filegoogle =  filename + "google" + ".aes"
+	#filedropboxdb = filename + "dropbox" + ".aes"
+	filedropbox = "/" + filename + "dropbox" + ".aes"
+
 	fileid = getGDriveFileIdFromDbase(filename)
-	
+
 	gdrive.delete_file(fileid)
-	
-	dropbox.files_delete(filename)
+
+	dbx.files_delete(filedropbox)
+
 	
 	sql = "DELETE FROM fileinfo WHERE filename = %s"
-    val = (filename )
-
-    mycursor.execute(sql, val)
-
-    mydb.commit()
 	
-    return
+	val = (filename,)
+	mycursor.execute(sql, val)
+	mydb.commit()
 
-def executeCloud9():
-    file = open('fileResult.txt', 'r')
-    content = file.read().splitlines()
-    num_lines = sum(1 for line in open('fileResult.txt'))
-    for fileVariable in range(0,num_lines):
-        binaryArray = []
-        arrayFile = content[fileVariable].split()
-        oldpFileName = arrayFile[0]
-        newpFileName = arrayFile[1]
-        binaryArray.append(arrayFile[2])
-        binaryArray.append(arrayFile[3])
-        binaryArray.append(arrayFile[4])
-        binaryArray.append(arrayFile[5])
-        binarystr = ''.join(binaryArray)
-        pFinalresult = int(binarystr, 2)
-        if(pFinalresult == 1):
-            renameFile(oldpFileName,newpFileName)
-        elif(pFinalresult == 2):
-            deleteFile(newpFileName)
-        else:
-            addFile(newpFileName)
-    return
+	
+	#sql = "DELETE FROM fileinfo WHERE filename = AND cloud_provider = %s"
+	
+	#val = (filegoogle, "google")
+	#mycursor.execute(sql, val)
+	#mydb.commit()
+	
+	
+	return
 
-def listFilesinDirectory();
-    cwd = os.getcwd()
-    os.listdir()
-    f = []
-    for (dirpath, dirnames, filenames) in os.walk(cwd):
-        f.extend(filenames)
-        break
-    return f
+def executeCloud9(events):
+	for key, val in events.items():
+		pFinalvalue = int(val,2)
+		if (pFinalvalue == 4):
+			print("adding Files")
+			pValcheck = checkifexists(key)
+			if not pValcheck:
+				addFile(key)
+		elif (pFinalvalue == 2):
+			print("deletingfiles")
+			pValcheck = checkifexists(key)
+			if pValcheck:
+				deleteFile(key)
+		elif (pFinalvalue == 1):
+			print("modifying files")
+			deleteFile(key)
+			addFile(key)
+		elif(pFinalvalue == 0):
+			print("system is idle")
+		else:
+			continue
 
-def getDatabselist():    
-    
-    dblist = []
-    
-    sql = "SELECT filename FROM fileinfo"
-    mycursor.execute(sql)
+	return
 
-    myresult = mycursor.fetchall()
 
-    for x in myresult:
-       dblist.append(x)
+def listFilesinDirectory(fileDirectory):
 
-    return dblist
+	f = []
+
+	for (dirpath, dirnames, filenames) in os.walk(fileDirectory):
+
+		f.extend(filenames)
+		break
+
+	return f
+
+
+def checkifexists(filename):
+
+	filename = path_leaf(filename)
+
+	sql = "SELECT COUNT(1) FROM fileinfo WHERE filename = %s"
+	val = (filename,)
+	mycursor.execute(sql, val)
+
+	myresult = mycursor.fetchall()
+
+	for y in myresult:
+		x = y
+
+	if (x[0] == 0 ):
+		return 0
+
+	return 1
+
+
+def getDatabselist():
+
+	dblist = []
+
+	sql = "SELECT filename FROM fileinfo"
+
+	mycursor.execute(sql)
+
+	myresult = mycursor.fetchall()
+
+	for x in myresult:
+		x = ''.join(x)
+		dblist.append(x)
+
+	#print (dblist)
+
+	return dblist
+
 
 def getDecryptKeyfromDbase(filename):
-    
-    sql = "SELECT encryption_key FROM fileinfo WHERE cloud_provider = %s AND filename = %s"
-    mycursor.execute(sql, "google", filename)
 
-    myresult = mycursor.fetchall()
+	filename = path_leaf(filename)
 
-    for x in myresult:
-        passkey = x
-        
-    return passkey
+	#print ("filename is ",filename)
+	sql = "SELECT encryption_key FROM fileinfo WHERE filename = %s"
+	val = (filename,)
+	mycursor.execute(sql, val)
+
+	myresult = mycursor.fetchall()
+	
+	passkey = ""
+
+	#print ("passkey is ", passkey)
+
+	for x in myresult:
+		x =''.join(x)
+		passkey = x
+
+	return passkey
+
 
 def getDropBoxFileIdFromDbase(filename):
-    
-    sql = "SELECT fileid FROM fileinfo WHERE cloud_provider = %s AND fileid = %s"
-    mycursor.execute(sql, "dropbox", filename)
 
-    myresult = mycursor.fetchall()
+	filename = path_leaf(filename)
+	sql = "SELECT dropboxfileid FROM fileinfo WHERE filename = %s"
+	val = (filename,)
+	mycursor.execute(sql, val)
 
-    for x in myresult:
-        pDropBoxId = x
-        
-    return pDropBoxId
+	myresult = mycursor.fetchall()
+	
+	pDropBoxId = "" 
+
+	for x in myresult:
+		pDropBoxId = x
+
+	return pDropBoxId
 
 
 def getGDriveFileIdFromDbase(filename):
-    
-    sql = "SELECT fileid FROM fileinfo WHERE cloud_provider = %s AND filename = %s"
-    mycursor.execute(sql, "google", filename)
 
-    myresult = mycursor.fetchall()
+	filename = path_leaf(filename)
 
-    for x in myresult:
-        pGdriveId = x
-    
-    return pGdriveId
-    
+	sql = "SELECT googlefileid FROM fileinfo WHERE filename = %s"
+
+	val = (filename,)
+
+	mycursor.execute(sql, val)
+	
+	pGdriveId = ""
+
+	myresult = mycursor.fetchall()
+
+	for x in myresult:
+		x = ''.join(x)
+		pGdriveId = x
+
+	return pGdriveId
+
 
 def downLoad_DropBox(fileId_dropBox):
-	
-	src = os.listdir()
 
-    dbx.files_download_to_file(fileId_dropBox, src)
-	
+	cwd = os.path.dirname(os.path.realpath(__file__))
+
+	os.chdir(dirpath)
+
+	#print(fileId_dropBox)
+
+	backup = "/" + fileId_dropBox
+
+	dbx.files_download_to_file(fileId_dropBox, backup, None)
+
+	os.chdir(cwd)
+
 	return
-    
-def getGdriveName(fileId_gDrive):
-    
-    sql = "SELECT filename FROM fileinfo WHERE cloud_provider = %s AND fileid = %s"
-    mycursor.execute(sql, "google", fileId_gDrive)
 
-    myresult = mycursor.fetchall()
 
-    for x in myresult:
-        pGdrivefilename = x
-    
-    return pGdrivefilename
+def downLoad_Gdrive(fileId_gDrive, src):
+
+	gdrive.download_file(fileId_gDrive, src)
+	return
+
+
+def getDropBoxFileNameFromDbase(filename):
+
+	filename = path_leaf(filename)
+
+	sql = "SELECT dcloud_provider FROM fileinfo WHERE filename = %s"
+	val = (filename,)
+	mycursor.execute(sql, val)
+
+	myresult = mycursor.fetchall()
 	
-def downLoad_Gdrive(fileId_gDrive):
-    
-	src = os.listdir()
+	pDrobBoxfilename = ""
+
+	for x in myresult:
+		x = ''.join(x)
+		pDrobBoxfilename = x
+
+	return pDrobBoxfilename
+
+def getGdriveFileNameFromDbase (filename):
+
+	filename = path_leaf(filename)
+
+	sql = "SELECT gcloud_provider FROM fileinfo WHERE filename = %s"
+	val = (filename,)
+	mycursor.execute(sql, val)
+
+	myresult = mycursor.fetchall()
 	
-	gdrive.download_file(fileId_gDrive,src)
-	
-    return 
+	pGdrivefilename = "" 
+
+	for x in myresult:
+		x = ''.join(x)
+		pGdrivefilename = x
+
+
+	return pGdrivefilename
+
+
+def deleteEntries(filename):
+	sql = "SELECT googlefileid FROM fileinfo WHERE googlefileid IS NULL AND filename = %s;"
+	val = (filename,)
+	mycursor.execute(sql, val)
+
+	myresult = mycursor.fetchall()
+	myresult = myresult[0]
+
+	sql = "SELECT dropboxfileid FROM fileinfo WHERE googlefileid IS NULL AND filename = %s;"
+	val = (filename,)
+	mycursor.execute(sql, val)
+	myresult2 = mycursor.fetchall()
+	myresult2 = myresult2[0]
+
+	if ((not myresult[0]) or (not myresult2[0])):
+		sql = "delete FROM fileinfo WHERE filename = %s;"
+		val = (filename,)
+		mycursor.execute(sql, val)
+
+		mydb.commit()
+
+	return
 
 def options():
-    fileList = listFilesinDirectory()
-    dbList = getDatabselist()
-    if(!fileList && dbList)
-        for fileName in dbList:
-            fileId_dropBox = getDropBoxFileIdFromDbase(fileName)
-            fileId_gDrive = getGDriveFileIdFromDbase(fileName)
-            fileDropBoxName = getDropBoxFileNameFromDbase(fileName)
-            fileGdriveName = getGdriveFileNameFromDbase(fileName)
-            pDecryptKey = getDecryptKeyfromDbase(fileName)
-            pDropBoxfilename = downLoad_DropBox(fileId_dropBox)
-            pGdrivefilename = downLoad_Gdrive(fileId_gDrive)
-            listFiles = []
-            listFilesLines[]
-            listFilesLines.append(fileGdriveName)
-            listFilesLines.append(pGdrivefilename)
-            listFilesLines.append(fileDropBoxName)
-            listFilesLines.append(pDropBoxfilename)
-            listFiles.append(LisFilesLines[0])
-            listFiles.append(ListFileNames[1])
-            Joining_files.joining_files(listFiles,filePass,textOriginal)
+	bool = "true"
+	dir = dirpath
+	filelist = listFilesinDirectory(dir)
+	dblist = getDatabselist()
+	for staleentries in dblist:
+		deleteEntries(staleentries)
+	dblist = getDatabselist()
+	setA = set(filelist)
+	setB = set(dblist)
 
-    while True:
-        print("Hi")
-        createSnapshot()
-        executeCloud9()
-        deleteSnapshot()
-        time.sleep(300)
-        return
+	fileTobeAdded = list(setA.difference(setB))
 
-	with EventHandler(path='/some/path/to/folder', recursive=False) as event_handler:
-		#list = event_handler.get_snapshot()
-		
+	fileTobeDownloaded = list(setB.difference(setA))
+
+	print (fileTobeAdded)
+
+	print (fileTobeDownloaded)
+
+	if (fileTobeDownloaded):
+		for fileName in fileTobeDownloaded:
+			#print(fileName)
+			pDropBoxId = " "
+			pGdriveId = " "
+			pDropBoxfilename = " "
+			pGdrivefilename = " "
+			passkey = " "
+			fileName = os.path.join(dirpath, fileName)
+			pDropBoxId = getDropBoxFileIdFromDbase(fileName)
+			pGdriveId = getGDriveFileIdFromDbase(fileName)
+			pDropBoxfilename = getDropBoxFileNameFromDbase(fileName)
+			pGdrivefilename = getGdriveFileNameFromDbase(fileName)
+			pDecryptKey = getDecryptKeyfromDbase(fileName)
+			#print(pGdriveId)
+			#print (pDropBoxId)
+			#print (pDropBoxfilename)
+			#print (pGdrivefilename)
+			downLoad_DropBox(pDropBoxfilename)
+			restoregdriveFile = os.path.join(dirpath,pGdrivefilename)
+			downLoad_Gdrive(pGdriveId, restoregdriveFile)
+			listFilesLines = []
+			plainGdriveFileName = os.path.splitext(pGdrivefilename)[0]
+			plainDropboxFileName = os.path.splitext(pDropBoxfilename)[0]
+			#print ("Unencrypted Google Drive", plainGdriveFileName)
+			#print ("Unencrypted DropBox", plainDropboxFileName)
+			plainGdriveFileName = os.path.join(dirpath,plainGdriveFileName)
+			plainDropboxFileName = os.path.join(dirpath, plainDropboxFileName)
+			pGdrivefilename = os.path.join(dirpath, pGdrivefilename)
+			pDropBoxfilename = os.path.join(dirpath, pDropBoxfilename)
+			listFilesLines.append(plainGdriveFileName)
+			listFilesLines.append(pGdrivefilename)
+			listFilesLines.append(plainDropboxFileName)
+			listFilesLines.append(pDropBoxfilename)
+			restoreFile = os.path.join(dirpath, fileName)
+			Joining_files.joining_files(listFilesLines, pDecryptKey, restoreFile)
+
+	if(fileTobeAdded):
+			setupSnapshot()
+			createSnapshot(fileTobeAdded)
+			backupfile = ""
+			for fileName in fileTobeAdded:
+				backupfile = os.path.join(dirpath, fileName)
+				addFile(backupfile)
+			deleteSnapshot()
+
+	with filesystem.EventHandler(path= dirpath, recursive=False) as event_handler:
+		# list = event_handler.get_snapshot()
+
 		try:
 			while True:
-				time.sleep(5)
 				events = event_handler.get_new_batch()
-				setupSnapshot()
-				createSnapshot(events)
-				executeCloud9()
-				deleteSnapshot()
-				
-					# process events of current batch
+				if events:
+					setupSnapshot()
+					createSnapshot(events)
+					executeCloud9(events)
+					deleteSnapshot()
+				print("checking time stamp")
+				time.sleep(50)
+
 		finally:
-				# post processing
+			# post processing
 			pass
+	return
